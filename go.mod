@@ -1,4 +1,4 @@
-module github.com/prateeksonii/shutter-go
+module github.com/prateeksonii/shutter-api-go
 
 go 1.19
 
