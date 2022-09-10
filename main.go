@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
+	"github.com/prateeksonii/shutter-api-go/pkg/routes"
 )
 
 func main() {
@@ -16,6 +17,10 @@ func main() {
 	}
 
 	app := fiber.New()
+
+	router := app.Group("/api/v1")
+
+	router.Route("/users", routes.UserRoutes)
 
 	port, hasPortEnv := os.LookupEnv("PORT")
 
