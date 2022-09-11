@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
 	"github.com/prateeksonii/shutter-api-go/pkg/configs"
 	"github.com/prateeksonii/shutter-api-go/pkg/routes"
@@ -33,6 +34,8 @@ func main() {
 			})
 		},
 	})
+
+	app.Use(cors.New())
 
 	router := app.Group("/api/v1")
 

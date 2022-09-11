@@ -101,6 +101,11 @@ func SignIn(c *fiber.Ctx) error {
 		})
 	}
 
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userDto.Password)); err != nil {
+		c.Status(fiber.StatusUnauthorized)
+		return errors.New("invalid username or password")
+	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &models.Claims{
 		User: *user,
 		RegisteredClaims: jwt.RegisteredClaims{
