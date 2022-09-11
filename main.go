@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
+	"github.com/prateeksonii/shutter-api-go/pkg/configs"
 	"github.com/prateeksonii/shutter-api-go/pkg/routes"
 )
 
@@ -16,11 +17,26 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	app := fiber.New()
+	configs.Connect()
+
+	app := fiber.New(fiber.Config{
+		ErrorHandler: func(c *fiber.Ctx, err error) error {
+			status := c.Response().StatusCode()
+
+			if status == fiber.StatusOK {
+				status = fiber.StatusInternalServerError
+			}
+
+			return c.Status(status).JSON(fiber.Map{
+				"error":   true,
+				"message": err.Error(),
+			})
+		},
+	})
 
 	router := app.Group("/api/v1")
 
-	router.Route("/users", routes.UserRoutes)
+	router.Route("/auth", routes.AuthRoutes)
 
 	port, hasPortEnv := os.LookupEnv("PORT")
 
