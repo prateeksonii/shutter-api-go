@@ -4,9 +4,12 @@ import "gorm.io/gorm"
 
 type User struct {
 	gorm.Model
-	Name     string
-	Username string
-	Password string
+	Name            string
+	Username        string
+	Password        string
+	Contacts        []Contact
+	SentInvites     []Invite `gorm:"foreignKey:SenderID"`
+	ReceivedInvites []Invite `gorm:"foreignKey:ReceiverID"`
 }
 
 type SignUpDto struct {

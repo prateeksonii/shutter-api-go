@@ -19,7 +19,7 @@ func Connect() error {
 		panic(err)
 	}
 
-	Db.AutoMigrate(&models.User{})
+	Db.AutoMigrate(&models.User{}, &models.Invite{})
 
 	return nil
 }
