@@ -44,7 +44,7 @@ func SendInvite(c *fiber.Ctx) error {
 
 	if result.RowsAffected > 0 {
 		c.Status(fiber.StatusConflict)
-		return errors.New("Invite already sent")
+		return errors.New("invite already sent")
 	}
 
 	invite := &models.Invite{
