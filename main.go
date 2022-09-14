@@ -82,6 +82,7 @@ func main() {
 	}))
 
 	router.Route("/auth", routes.AuthRoutes)
+	router.Route("/users", routes.UserRoutes)
 	router.Route("/invite", routes.InviteRoutes)
 
 	port, hasPortEnv := os.LookupEnv("PORT")
