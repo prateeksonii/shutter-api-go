@@ -1,12 +1,12 @@
 package routes
 
 import (
-	"github.com/gofiber/fiber/v2"
+	"github.com/gin-gonic/gin"
 	"github.com/prateeksonii/shutter-api-go/app/handlers"
 )
 
-func AuthRoutes(r fiber.Router) {
-	r.Post("/signup", handlers.SignUp)
-	r.Post("/signin", handlers.SignIn)
-	r.Get("/me", handlers.IsAuthenticated, handlers.GetAuthenticatedUser)
+func AuthRoutes(r gin.RouterGroup) {
+	r.POST("/signup", handlers.SignUp)
+	r.POST("/signin", handlers.SignIn)
+	r.GET("/me", handlers.IsAuthenticated, handlers.GetAuthenticatedUser)
 }

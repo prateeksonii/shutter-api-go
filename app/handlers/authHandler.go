@@ -2,38 +2,26 @@ package handlers
 
 import (
 	"errors"
-	"log"
+	"net/http"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/prateeksonii/shutter-api-go/pkg/configs"
 	"github.com/prateeksonii/shutter-api-go/pkg/models"
-	"github.com/prateeksonii/shutter-api-go/pkg/utils"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
-func SignUp(c *fiber.Ctx) error {
+func SignUp(c *gin.Context) {
 
-	userDto := &models.SignUpDto{}
+	userDto := models.SignUpDto{}
 
-	if err := c.BodyParser(userDto); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": err.Error(),
-		})
-	}
-
-	validate := utils.NewValidator()
-
-	if err := validate.Struct(userDto); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": err.Error(),
-		})
+	if err := c.ShouldBindJSON(&userDto); err != nil {
+		c.Status(http.StatusBadRequest)
+		panic(err)
 	}
 
 	existingUser := new(models.User)
@@ -41,10 +29,8 @@ func SignUp(c *fiber.Ctx) error {
 	result := configs.Db.Where("username = ?", userDto.Username).First(&existingUser)
 
 	if result.RowsAffected > 0 {
-		return c.Status(fiber.StatusConflict).JSON(fiber.Map{
-			"error":   true,
-			"message": "User already exists",
-		})
+		c.Status(http.StatusConflict)
+		panic(errors.New("User already exists"))
 	}
 
 	user := new(models.User)
@@ -54,40 +40,26 @@ func SignUp(c *fiber.Ctx) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(userDto.Password), 14)
 
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error":   true,
-			"message": err.Error(),
-		})
+		panic(err)
 	}
 
 	user.Password = string(hash)
 
 	configs.Db.Create(&user)
 
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+	c.JSON(http.StatusCreated, gin.H{
 		"ok":   true,
 		"user": user,
 	})
 }
 
-func SignIn(c *fiber.Ctx) error {
+func SignIn(c *gin.Context) {
 
-	userDto := &models.SignInDto{}
+	userDto := models.SignInDto{}
 
-	if err := c.BodyParser(userDto); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": err.Error(),
-		})
-	}
-
-	validate := utils.NewValidator()
-
-	if err := validate.Struct(userDto); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error":   true,
-			"message": err.Error(),
-		})
+	if err := c.ShouldBindJSON(userDto); err != nil {
+		c.Status(http.StatusBadRequest)
+		panic(err)
 	}
 
 	user := &models.User{}
@@ -95,15 +67,13 @@ func SignIn(c *fiber.Ctx) error {
 	result := configs.Db.Where("username = ?", userDto.Username).First(&user)
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"error":   true,
-			"message": result.Error.Error(),
-		})
+		c.Status(http.StatusNotFound)
+		panic(result.Error)
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userDto.Password)); err != nil {
-		c.Status(fiber.StatusUnauthorized)
-		return errors.New("invalid username or password")
+		c.Status(http.StatusUnauthorized)
+		panic(errors.New("invalid username or password"))
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &models.Claims{
@@ -116,51 +86,43 @@ func SignIn(c *fiber.Ctx) error {
 	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_KEY")))
 
 	if err != nil {
-		log.Println(err)
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error":   true,
-			"message": err.Error(),
-		})
+		c.Status(http.StatusInternalServerError)
+		panic(err)
 	}
 
-	return c.JSON(fiber.Map{
+	c.JSON(http.StatusOK, gin.H{
 		"ok":    true,
 		"user":  user,
 		"token": tokenString,
 	})
 }
 
-func GetAuthenticatedUser(c *fiber.Ctx) error {
-	user, ok := c.Locals("user").(models.User)
-
-	if !ok {
-		c.Status(fiber.StatusUnauthorized)
-		return errors.New("invalid user")
-	}
+func GetAuthenticatedUser(c *gin.Context) {
+	user := c.MustGet("user").(models.User)
 
 	completeUser := &models.User{}
 
 	configs.Db.Model(&models.User{}).Preload("SentInvites").Preload("ReceivedInvites").Where("ID = ?", user.ID).First(&completeUser)
 
-	return c.JSON(fiber.Map{
+	c.JSON(http.StatusOK, gin.H{
 		"ok":   true,
 		"user": completeUser,
 	})
 }
 
-func IsAuthenticated(c *fiber.Ctx) error {
-	authHeader := c.Get("Authorization")
+func IsAuthenticated(c *gin.Context) {
+	authHeader := c.GetHeader("Authorization")
 
 	if len(authHeader) == 0 {
-		c.Status(fiber.StatusUnauthorized)
-		return errors.New("no token provided")
+		c.Status(http.StatusUnauthorized)
+		panic(errors.New("no token provided"))
 	}
 
 	tokenArray := strings.Split(authHeader, " ")
 
 	if len(tokenArray) < 2 {
-		c.Status(fiber.StatusUnauthorized)
-		return errors.New("invalid token provided")
+		c.Status(http.StatusUnauthorized)
+		panic(errors.New("invalid token provided"))
 	}
 
 	claims := &models.Claims{}
@@ -170,16 +132,16 @@ func IsAuthenticated(c *fiber.Ctx) error {
 	})
 
 	if err != nil {
-		c.Status(fiber.StatusUnauthorized)
-		return err
+		c.Status(http.StatusUnauthorized)
+		panic(err)
 	}
 
 	if !token.Valid {
-		c.Status(fiber.StatusUnauthorized)
-		return errors.New("invalid token provided")
+		c.Status(http.StatusUnauthorized)
+		panic(errors.New("invalid token provided"))
 	}
 
-	c.Locals("user", claims.User)
+	c.Set("user", claims.User)
 
-	return c.Next()
+	c.Next()
 }

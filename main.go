@@ -2,15 +2,17 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"os"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/gofiber/websocket/v2"
+	"github.com/gofiber/websocket"
 	"github.com/joho/godotenv"
 	"github.com/prateeksonii/shutter-api-go/pkg/configs"
 	"github.com/prateeksonii/shutter-api-go/pkg/routes"
+	"gorm.io/gorm/logger"
 )
 
 func main() {
@@ -22,23 +24,25 @@ func main() {
 
 	configs.Connect()
 
-	app := fiber.New(fiber.Config{
-		ErrorHandler: func(c *fiber.Ctx, err error) error {
-			status := c.Response().StatusCode()
+	r := gin.Default()
 
-			if status == fiber.StatusOK {
-				status = fiber.StatusInternalServerError
+	r.Use(gin.Logger())
+
+	r.Use(gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
+		if err, ok := recovered.(error); ok {
+			if c.Writer.Status() == http.StatusOK {
+				c.Status(http.StatusInternalServerError)
 			}
-
-			return c.Status(status).JSON(fiber.Map{
+			c.JSON(c.Writer.Status(), gin.H{
 				"error":   true,
 				"message": err.Error(),
 			})
-		},
-	})
+			c.AbortWithStatus(http.StatusInternalServerError)
+		}
+	}))
 
-	app.Use(cors.New())
-	app.Use(logger.New())
+	r.Use(cors.New())
+	r.Use(logger.New())
 
 	router := app.Group("/api/v1")
 	router.Use("/ws", func(c *fiber.Ctx) error {

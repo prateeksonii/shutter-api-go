@@ -13,12 +13,12 @@ type User struct {
 }
 
 type SignUpDto struct {
-	Name     string `validate:"required"`
-	Username string `validate:"required,min=4"`
-	Password string `validate:"required,min=4"`
+	Name     string `json:"name" binding:"required"`
+	Username string `json:"username" binding:"required,min=4"`
+	Password string `json:"password" binding:"required,min=4"`
 }
 
 type SignInDto struct {
-	Username string `validate:"required,min=4"`
-	Password string `validate:"required,min=4"`
+	Username string `json:"username" binding:"required,min=4"`
+	Password string `json:"password" binding:"required,min=4"`
 }
