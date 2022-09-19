@@ -30,7 +30,7 @@ func SignUp(c *gin.Context) {
 
 	if result.RowsAffected > 0 {
 		c.Status(http.StatusConflict)
-		panic(errors.New("User already exists"))
+		panic(errors.New("user already exists"))
 	}
 
 	user := new(models.User)
@@ -57,7 +57,7 @@ func SignIn(c *gin.Context) {
 
 	userDto := models.SignInDto{}
 
-	if err := c.ShouldBindJSON(userDto); err != nil {
+	if err := c.ShouldBindJSON(&userDto); err != nil {
 		c.Status(http.StatusBadRequest)
 		panic(err)
 	}

@@ -41,8 +41,7 @@ func main() {
 
 	routes.AuthRoutes(router)
 	routes.InviteRoutes(router)
-
-	router.Route("/users", routes.UserRoutes)
+	routes.UserRoutes(router)
 
 	port, hasPortEnv := os.LookupEnv("PORT")
 
