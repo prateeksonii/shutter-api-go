@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/prateeksonii/shutter-api-go/pkg/configs"
@@ -23,6 +24,13 @@ func main() {
 	r := gin.Default()
 
 	r.Use(gin.Logger())
+
+	config := cors.DefaultConfig()
+	config.AllowAllOrigins = true
+	config.AllowCredentials = true
+	config.AllowHeaders = []string{"Origin", "authorization"}
+	config.AllowMethods = []string{"GET", "POST", "OPTIONS"}
+	r.Use(cors.New(config))
 
 	r.Use(gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
 		if err, ok := recovered.(error); ok {
