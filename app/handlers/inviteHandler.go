@@ -2,40 +2,33 @@ package handlers
 
 import (
 	"errors"
+	"net/http"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gin-gonic/gin"
 	"github.com/prateeksonii/shutter-api-go/pkg/configs"
 	"github.com/prateeksonii/shutter-api-go/pkg/models"
-	"github.com/prateeksonii/shutter-api-go/pkg/utils"
 	"gorm.io/gorm"
 )
 
-func SendInvite(c *fiber.Ctx) error {
-	inviteDto := &models.SendInviteDto{}
+func SendInvite(c *gin.Context) {
+	inviteDto := models.SendInviteDto{}
 
-	if err := c.BodyParser(inviteDto); err != nil {
-		c.Status(fiber.StatusBadRequest)
-		return err
+	if err := c.ShouldBindJSON(&inviteDto); err != nil {
+		c.Status(http.StatusBadRequest)
+		panic(err)
 	}
 
-	validate := utils.NewValidator()
-
-	if err := validate.Struct(inviteDto); err != nil {
-		c.Status(fiber.StatusBadRequest)
-		return err
-	}
-
-	sender := c.Locals("user").(models.User)
+	sender := c.MustGet("user").(models.User)
 
 	receiver := new(models.User)
 
-	receiverUsername := c.Params("username")
+	receiverUsername := c.Param("username")
 
 	result := configs.Db.Where("username = ?", receiverUsername).First(&receiver)
 
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		c.Status(fiber.StatusNotFound)
-		return result.Error
+		c.Status(http.StatusNotFound)
+		panic(result.Error)
 	}
 
 	existingInvite := &models.Invite{}
@@ -43,8 +36,8 @@ func SendInvite(c *fiber.Ctx) error {
 	result = configs.Db.Where("sender_id = ? and receiver_id = ?", sender.ID, receiver.ID).First(existingInvite)
 
 	if result.RowsAffected > 0 {
-		c.Status(fiber.StatusConflict)
-		return errors.New("invite already sent")
+		c.Status(http.StatusConflict)
+		panic(errors.New("invite already sent"))
 	}
 
 	invite := &models.Invite{
@@ -55,7 +48,7 @@ func SendInvite(c *fiber.Ctx) error {
 
 	configs.Db.Create(&invite)
 
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+	c.JSON(http.StatusOK, gin.H{
 		"ok":     true,
 		"invite": invite,
 	})

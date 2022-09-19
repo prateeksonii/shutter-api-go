@@ -12,5 +12,5 @@ type Invite struct {
 }
 
 type SendInviteDto struct {
-	Message string `validate:"required"`
+	Message string `json:"message" binding:"required"`
 }
