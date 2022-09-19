@@ -91,5 +91,6 @@ func main() {
 		port = "4000"
 	}
 
-	app.Listen(":" + port)
+	err = app.Listen(":" + port)
+	log.Println(err.Error())
 }

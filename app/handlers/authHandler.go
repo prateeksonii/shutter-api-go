@@ -138,9 +138,13 @@ func GetAuthenticatedUser(c *fiber.Ctx) error {
 		return errors.New("invalid user")
 	}
 
+	completeUser := &models.User{}
+
+	configs.Db.Model(&models.User{}).Preload("SentInvites").Preload("ReceivedInvites").Where("ID = ?", user.ID).First(&completeUser)
+
 	return c.JSON(fiber.Map{
 		"ok":   true,
-		"user": user,
+		"user": completeUser,
 	})
 }
 
